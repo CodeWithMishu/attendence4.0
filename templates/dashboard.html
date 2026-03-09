@@ -1,0 +1,777 @@
+{% extends "base.html" %}
+{% block title %}Dashboard | {{ company_name }}{% endblock %}
+{% block content %}
+<section class="panel hero-ribbon">
+  <div class="hero-main">
+    <p class="hero-eyebrow">{{ "Enterprise Admin Console" if is_admin else "Employee Self-Service" }}</p>
+    <h1>{{ "Workforce Operations Command Center" if is_admin else "Personal Attendance Workspace" }}</h1>
+    <p class="hero-subtext">
+      {{ "Track attendance integrity, enforce policy, monitor teams in real time, and scale into a complete workforce platform." if is_admin else "Mark IN/OUT quickly, keep your records accurate, and submit corrections with a clear approval trail." }}
+    </p>
+    <div class="hero-actions">
+      <a class="btn btn-primary" href="#attendance-form">Start Attendance</a>
+      {% if is_admin %}
+      <a class="btn btn-soft" href="{{ url_for('admin_analytics_page') }}">Analytics</a>
+      <a class="btn btn-soft" href="{{ url_for('export_attendance') }}">Export CSV</a>
+      {% else %}
+      <a class="btn btn-soft" href="#record-search">My History</a>
+      <a class="btn btn-soft" href="#correction_type">Correction Request</a>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="hero-side">
+    {% if is_admin %}
+    <article class="hero-metric">
+      <p>Live Workforce</p>
+      <h3>{{ stats["active_inside"] }}</h3>
+      <span>employees currently in office</span>
+    </article>
+    <article class="hero-metric">
+      <p>Today Throughput</p>
+      <h3>{{ stats["today_in"] + stats["today_out"] }}</h3>
+      <span>total attendance events</span>
+    </article>
+    {% else %}
+    <article class="hero-metric">
+      <p>Current Status</p>
+      <h3>{{ stats["current_status"] }}</h3>
+      <span>real-time punch state</span>
+    </article>
+    <article class="hero-metric">
+      <p>Worked Today</p>
+      <h3>{{ stats["today_work_hours"] }}</h3>
+      <span>hours tracked so far</span>
+    </article>
+    {% endif %}
+  </div>
+</section>
+
+<section class="stats-grid {{ 'stats-admin-rich' if is_admin else '' }}">
+  {% if is_admin %}
+  <article class="stat-card">
+    <p>Total Employees</p>
+    <h2>{{ stats["total_users"] }}</h2>
+  </article>
+  <article class="stat-card">
+    <p>Today IN</p>
+    <h2>{{ stats["today_in"] }}</h2>
+  </article>
+  <article class="stat-card">
+    <p>Today OUT</p>
+    <h2>{{ stats["today_out"] }}</h2>
+  </article>
+  <article class="stat-card">
+    <p>Currently In Office</p>
+    <h2>{{ stats["active_inside"] }}</h2>
+  </article>
+  <article class="stat-card">
+    <p>Avg Today Hours</p>
+    <h2>{{ stats["avg_today_hours"] }}</h2>
+  </article>
+  <article class="stat-card">
+    <p>Late Employees</p>
+    <h2>{{ stats["late_today"] }}</h2>
+  </article>
+  <article class="stat-card">
+    <p>Overtime (Hrs)</p>
+    <h2>{{ stats["overtime_today_hours"] }}</h2>
+  </article>
+  {% else %}
+  <article class="stat-card">
+    <p>Current Status</p>
+    <h2>{{ stats["current_status"] }}</h2>
+  </article>
+  <article class="stat-card">
+    <p>Today Punches</p>
+    <h2>{{ stats["today_events"] }}</h2>
+  </article>
+  <article class="stat-card">
+    <p>Worked Today (HH:MM)</p>
+    <h2>{{ stats["today_work_hours"] }}</h2>
+  </article>
+  <article class="stat-card">
+    <p>First IN</p>
+    <h2 class="small-value">{{ stats["first_in"] }}</h2>
+  </article>
+  <article class="stat-card">
+    <p>Last OUT</p>
+    <h2 class="small-value">{{ stats["last_out"] }}</h2>
+  </article>
+  <article class="stat-card">
+    <p>Late By (Minutes)</p>
+    <h2>{{ stats["late_by"] }}</h2>
+  </article>
+  <article class="stat-card">
+    <p>Overtime (Hours)</p>
+    <h2>{{ stats["overtime_hours"] }}</h2>
+  </article>
+  {% endif %}
+</section>
+
+<section class="panel module-panel">
+  <div class="panel-head">
+    <h2>Enterprise Expansion Modules</h2>
+    <p>Attendance is your core engine. Add these separately priced modules with distinct icons for every business unit.</p>
+  </div>
+
+  <div class="module-grid">
+    <article class="module-card">
+      <div class="module-icon module-icon-attendance" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="12" r="9"></circle>
+          <path d="M12 7v6l4 2"></path>
+        </svg>
+      </div>
+      <div>
+        <div class="module-headline">
+          <h3>Attendance Core</h3>
+          <span class="module-state module-state-core">Active Core</span>
+        </div>
+        <p>Geo-validated IN/OUT, correction workflow, audit logs, and export-ready records.</p>
+      </div>
+    </article>
+
+    <article class="module-card">
+      <div class="module-icon module-icon-shift" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none">
+          <rect x="3" y="5" width="18" height="16" rx="2"></rect>
+          <path d="M8 3v4M16 3v4M3 10h18"></path>
+        </svg>
+      </div>
+      <div>
+        <div class="module-headline">
+          <h3>Shift Planner</h3>
+          <span class="module-state">Add-On</span>
+        </div>
+        <p>Roster planning, rotation templates, shift swaps, and auto-assignment by department.</p>
+      </div>
+    </article>
+
+    <article class="module-card">
+      <div class="module-icon module-icon-payroll" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none">
+          <rect x="3" y="6" width="18" height="12" rx="2"></rect>
+          <path d="M3 10h18M8 14h3M14 14h2"></path>
+        </svg>
+      </div>
+      <div>
+        <div class="module-headline">
+          <h3>Payroll Sync</h3>
+          <span class="module-state">Add-On</span>
+        </div>
+        <p>Late/overtime mapping, salary-cycle exports, and connector APIs for HRMS/payroll tools.</p>
+      </div>
+    </article>
+
+    <article class="module-card">
+      <div class="module-icon module-icon-visitor" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none">
+          <rect x="4" y="3" width="16" height="18" rx="2"></rect>
+          <circle cx="12" cy="10" r="3"></circle>
+          <path d="M8 17c1.2-1.8 2.6-2.5 4-2.5s2.8.7 4 2.5"></path>
+        </svg>
+      </div>
+      <div>
+        <div class="module-headline">
+          <h3>Visitor Desk</h3>
+          <span class="module-state">Add-On</span>
+        </div>
+        <p>Visitor passes, contractor tracking, host approvals, and entry/exit compliance logs.</p>
+      </div>
+    </article>
+
+    <article class="module-card">
+      <div class="module-icon module-icon-compliance" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M12 3l8 3v6c0 4.5-3 7.8-8 9-5-1.2-8-4.5-8-9V6l8-3z"></path>
+          <path d="M9 12l2 2 4-4"></path>
+        </svg>
+      </div>
+      <div>
+        <div class="module-headline">
+          <h3>Compliance Vault</h3>
+          <span class="module-state">Add-On</span>
+        </div>
+        <p>Policy evidence, legal audit packs, exception approvals, and retention-ready trails.</p>
+      </div>
+    </article>
+  </div>
+</section>
+
+{% if is_admin %}
+<section class="panel value-panel">
+  <div class="panel-head">
+    <h2>Premium Pricing Justification</h2>
+    <p>Use these points in proposals when positioning this product at enterprise budget levels.</p>
+  </div>
+  <div class="value-grid">
+    <article class="value-card">
+      <h3>Audit Ready by Default</h3>
+      <p>Every event is timestamped, source tagged, and correction-tracked, reducing compliance risk and manual evidence work.</p>
+    </article>
+    <article class="value-card">
+      <h3>Policy + Geofence Enforcement</h3>
+      <p>Operational policy gets enforced at the time of punch, not after payroll mistakes happen.</p>
+    </article>
+    <article class="value-card">
+      <h3>Manager Productivity Gains</h3>
+      <p>Live office visibility, correction approvals, and export-ready data reduce HR and admin effort each month.</p>
+    </article>
+    <article class="value-card">
+      <h3>Expandable Product Surface</h3>
+      <p>Shift planning, payroll sync, visitor desk, and compliance vault create clear upsell paths per industry.</p>
+    </article>
+  </div>
+</section>
+{% endif %}
+
+<section class="dashboard-grid">
+  <article class="panel form-panel">
+    <div class="panel-head">
+      <h2>IN / OUT Attendance</h2>
+      <p>Fetch your location, then mark your attendance event.</p>
+    </div>
+
+    <div class="policy-chip-grid">
+      <span class="policy-chip">Shift: {{ settings_data["shift_start"] }} - {{ settings_data["shift_end"] }}</span>
+      <span class="policy-chip">Grace: {{ settings_data["grace_minutes"] }} min</span>
+      <span class="policy-chip">Full Day: {{ settings_data["full_day_hours"] }}h</span>
+      <span class="policy-chip">Geofence: {{ "Strict" if settings_data["geofence_enforced"] else "Advisory" }}</span>
+    </div>
+
+    <form id="attendance-form" class="attendance-form">
+      <label for="person_name">Person Name</label>
+      <input id="person_name" name="person_name" type="text" required value="{{ user['full_name'] }}" placeholder="Enter person name" />
+      <input id="action_type" name="action_type" type="hidden" />
+
+      <div class="location-block">
+        <div class="location-top">
+          <label>Location</label>
+          <button class="btn btn-soft" type="button" id="fetch-location">Auto Fetch</button>
+        </div>
+        <p class="muted" id="location-status">Location not fetched yet.</p>
+        <input id="latitude" name="latitude" type="hidden" />
+        <input id="longitude" name="longitude" type="hidden" />
+        <input id="location_text" name="location_text" type="hidden" />
+      </div>
+
+      <div class="punch-actions">
+        <button class="btn btn-primary" type="button" id="mark-in-btn">Mark IN</button>
+        <button class="btn btn-out" type="button" id="mark-out-btn">Mark OUT</button>
+      </div>
+      <p id="submit-feedback" class="muted"></p>
+    </form>
+
+    {% if not is_admin %}
+    <div class="separator"></div>
+    <div class="panel-head slim">
+      <h3>Correction Request</h3>
+      <p>Request admin approval for missed or corrected punches.</p>
+    </div>
+    <form method="post" action="{{ url_for('request_correction') }}" class="correction-request-form">
+      {{ csrf_input() }}
+      <label for="correction_type">Request Type</label>
+      <select id="correction_type" name="request_type" required>
+        <option value="MISSING_IN">Missing IN</option>
+        <option value="MISSING_OUT">Missing OUT</option>
+        <option value="TIME_FIX">Time Correction</option>
+      </select>
+
+      <div id="proposed_event_wrap">
+        <label for="proposed_event_type">Event Type</label>
+        <select id="proposed_event_type" name="proposed_event_type">
+          <option value="IN">IN</option>
+          <option value="OUT">OUT</option>
+        </select>
+      </div>
+
+      <label for="requested_datetime">Requested Time</label>
+      <input id="requested_datetime" name="requested_datetime" type="datetime-local" required />
+
+      <label for="correction_reason">Reason</label>
+      <textarea id="correction_reason" name="reason" rows="3" minlength="8" maxlength="800" required placeholder="Write a clear reason..."></textarea>
+
+      <button class="btn btn-primary" type="submit">Submit Request</button>
+    </form>
+    {% endif %}
+  </article>
+
+  <article class="panel table-panel">
+    <div class="panel-head table-head">
+      <div>
+        <h2>{{ "Manage Attendance Logs" if is_admin else "My Attendance History" }}</h2>
+        <p>{{ "Filter, export, and manage every IN/OUT record." if is_admin else "Track all your recent attendance events." }}</p>
+      </div>
+      {% if is_admin %}
+      <a class="btn btn-soft" href="{{ url_for('admin_analytics_page') }}">Open Analytics</a>
+      {% endif %}
+    </div>
+
+    {% if is_admin %}
+    <form method="get" action="{{ url_for('dashboard') }}" class="filter-grid">
+      <div>
+        <label for="date_from">From</label>
+        <input id="date_from" type="date" name="date_from" value="{{ filters['date_from'] }}" />
+      </div>
+      <div>
+        <label for="date_to">To</label>
+        <input id="date_to" type="date" name="date_to" value="{{ filters['date_to'] }}" />
+      </div>
+      <div>
+        <label for="user_filter">Employee</label>
+        <select id="user_filter" name="user_id">
+          <option value="">All</option>
+          {% for item in all_users %}
+          <option value="{{ item['id'] }}" {{ 'selected' if filters['user_id'] == (item['id'] | string) else '' }}>{{ item['full_name'] }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label for="event_type">Event</label>
+        <select id="event_type" name="event_type">
+          <option value="">All</option>
+          <option value="IN" {{ 'selected' if filters['event_type'] == 'IN' else '' }}>IN</option>
+          <option value="OUT" {{ 'selected' if filters['event_type'] == 'OUT' else '' }}>OUT</option>
+        </select>
+      </div>
+      <div>
+        <label for="source">Source</label>
+        <select id="source" name="source">
+          <option value="">All</option>
+          <option value="LIVE" {{ 'selected' if filters['source'] == 'LIVE' else '' }}>LIVE</option>
+          <option value="CORRECTION" {{ 'selected' if filters['source'] == 'CORRECTION' else '' }}>CORRECTION</option>
+          <option value="IMPORT" {{ 'selected' if filters['source'] == 'IMPORT' else '' }}>IMPORT</option>
+        </select>
+      </div>
+      <div class="filter-actions">
+        <button class="btn btn-primary" type="submit">Apply</button>
+        <a class="btn btn-soft" href="{{ url_for('dashboard') }}">Clear</a>
+      </div>
+    </form>
+
+    <form method="get" action="{{ url_for('export_attendance') }}" class="export-grid">
+      <input type="hidden" name="start_date" value="{{ filters['date_from'] }}" />
+      <input type="hidden" name="end_date" value="{{ filters['date_to'] }}" />
+      <input type="hidden" name="user_id" value="{{ filters['user_id'] }}" />
+      <input type="hidden" name="event_type" value="{{ filters['event_type'] }}" />
+      <input type="hidden" name="source" value="{{ filters['source'] }}" />
+      <button class="btn btn-primary" type="submit">Export Filtered CSV</button>
+    </form>
+    {% endif %}
+
+    <div class="table-tools">
+      <input class="search-input" id="record-search" type="search" placeholder="Quick search in records..." />
+      <select id="record-event-filter" class="compact-select">
+        <option value="">All Events</option>
+        <option value="IN">IN</option>
+        <option value="OUT">OUT</option>
+      </select>
+      <select id="record-source-filter" class="compact-select">
+        <option value="">All Sources</option>
+        <option value="LIVE">LIVE</option>
+        <option value="CORRECTION">CORRECTION</option>
+        <option value="IMPORT">IMPORT</option>
+      </select>
+    </div>
+
+    <div class="table-wrap">
+      <table id="records-table">
+        <thead>
+          <tr>
+            <th>Event</th>
+            <th>Source</th>
+            <th>Person Name</th>
+            {% if is_admin %}
+            <th>Submitted By</th>
+            {% endif %}
+            <th>Location</th>
+            <th>Timestamp (Local)</th>
+            {% if is_admin %}
+            <th>Action</th>
+            {% endif %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for record in records %}
+          <tr class="record-row" data-event="{{ record['event_type'] }}" data-source="{{ record['entry_source'] }}">
+            <td>
+              <span class="event-badge {{ 'event-in' if record['event_type'] == 'IN' else 'event-out' }}">{{ record["event_type"] }}</span>
+            </td>
+            <td>
+              <span class="source-badge {% if record['entry_source'] == 'LIVE' %}source-live{% elif record['entry_source'] == 'IMPORT' %}source-import{% else %}source-correction{% endif %}">{{ record['entry_source'] }}</span>
+            </td>
+            <td>{{ record["person_name"] }}</td>
+            {% if is_admin %}
+            <td>{{ record["user_full_name"] }} ({{ record["username"] }})</td>
+            {% endif %}
+            <td>
+              <a href="https://www.google.com/maps?q={{ record['latitude'] }},{{ record['longitude'] }}" target="_blank">
+                {{ record["location_text"] or (record["latitude"] ~ ", " ~ record["longitude"]) }}
+              </a>
+            </td>
+            <td>{{ record["created_at"] }}</td>
+            {% if is_admin %}
+            <td>
+              <form method="post" action="{{ url_for('delete_attendance', attendance_id=record['id']) }}" onsubmit="return confirm('Delete this attendance record?');">
+                {{ csrf_input() }}
+                <button type="submit" class="btn btn-danger">Delete</button>
+              </form>
+            </td>
+            {% endif %}
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="{{ 7 if is_admin else 5 }}" class="no-data">No attendance records yet.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </article>
+</section>
+
+{% if is_admin %}
+<section class="admin-grid">
+  <article class="panel settings-panel">
+    <div class="panel-head">
+      <h2>Organization Policy Settings</h2>
+      <p>Configure shift, working hours, and geofence behavior.</p>
+    </div>
+    <form method="post" action="{{ url_for('update_settings') }}" class="settings-form">
+      {{ csrf_input() }}
+      <div>
+        <label for="company_name">Company Name</label>
+        <input id="company_name" name="company_name" type="text" value="{{ settings_data['company_name'] }}" required />
+      </div>
+      <div class="settings-grid-2">
+        <div>
+          <label for="shift_start">Shift Start</label>
+          <input id="shift_start" name="shift_start" type="time" value="{{ settings_data['shift_start'] }}" required />
+        </div>
+        <div>
+          <label for="shift_end">Shift End</label>
+          <input id="shift_end" name="shift_end" type="time" value="{{ settings_data['shift_end'] }}" required />
+        </div>
+      </div>
+      <div class="settings-grid-2">
+        <div>
+          <label for="grace_minutes">Grace Minutes</label>
+          <input id="grace_minutes" name="grace_minutes" type="number" min="0" max="240" value="{{ settings_data['grace_minutes'] }}" required />
+        </div>
+        <div>
+          <label for="full_day_hours">Full Day Hours</label>
+          <input id="full_day_hours" name="full_day_hours" type="number" step="0.25" min="1" max="16" value="{{ settings_data['full_day_hours'] }}" required />
+        </div>
+      </div>
+
+      <div class="settings-grid-3">
+        <div>
+          <label for="geofence_lat">Geofence Latitude</label>
+          <input id="geofence_lat" name="geofence_lat" type="text" value="{{ settings_data['geofence_lat'] or '' }}" placeholder="e.g. 28.6139" />
+        </div>
+        <div>
+          <label for="geofence_lng">Geofence Longitude</label>
+          <input id="geofence_lng" name="geofence_lng" type="text" value="{{ settings_data['geofence_lng'] or '' }}" placeholder="e.g. 77.2090" />
+        </div>
+        <div>
+          <label for="geofence_radius_m">Radius (meters)</label>
+          <input id="geofence_radius_m" name="geofence_radius_m" type="number" min="20" max="50000" value="{{ settings_data['geofence_radius_m'] }}" required />
+        </div>
+      </div>
+
+      <label class="checkline">
+        <input type="checkbox" name="geofence_enforced" {{ 'checked' if settings_data['geofence_enforced'] else '' }} />
+        Enforce geofence strictly
+      </label>
+
+      <button class="btn btn-primary" type="submit">Save Policy Settings</button>
+    </form>
+  </article>
+
+  <article class="panel live-panel">
+    <div class="panel-head">
+      <h2>Live In-Office Monitor</h2>
+      <p>Employees currently marked IN.</p>
+    </div>
+
+    <ul class="live-list">
+      {% for item in live_inside %}
+      <li>
+        <div>
+          <strong>{{ item['name'] }}</strong>
+          <p>Since {{ item['since'] }}</p>
+        </div>
+        <span class="duration-pill">{{ item['duration'] }}</span>
+      </li>
+      {% else %}
+      <li class="muted">No employees currently marked IN.</li>
+      {% endfor %}
+    </ul>
+
+    <div class="mini-kpi">
+      <p>Pending Corrections</p>
+      <h3>{{ pending_corrections | length }}</h3>
+    </div>
+  </article>
+</section>
+
+<section class="panel employee-panel">
+  <div class="panel-head">
+    <h2>Employee Management</h2>
+    <p>Create and manage employee accounts within your assigned limit.</p>
+  </div>
+
+  <div class="quota-banner">
+    <p>Account Quota Usage</p>
+    <h3>{{ admin_quota["used"] }} / {{ admin_quota["limit"] }}</h3>
+    <span>{{ admin_quota["remaining"] }} slots remaining</span>
+  </div>
+
+  <form method="post" action="{{ url_for('create_employee_account') }}" class="employee-create-form">
+    {{ csrf_input() }}
+    <h3>Create Employee Account</h3>
+    <div class="employee-create-grid">
+      <input type="text" name="full_name" required maxlength="120" placeholder="Full Name" />
+      <input type="text" name="username" required maxlength="80" placeholder="Username" />
+      <input type="password" name="password" required minlength="6" placeholder="Temporary Password" />
+      <input type="text" name="employee_code" maxlength="40" placeholder="Employee Code (Optional)" />
+      <input type="text" name="department" maxlength="80" placeholder="Department (Optional)" />
+      <input type="text" name="designation" maxlength="80" placeholder="Designation (Optional)" />
+      <input type="text" name="phone" maxlength="40" placeholder="Phone (Optional)" />
+      <input type="date" name="joining_date" />
+    </div>
+    <button class="btn btn-primary" type="submit" {{ 'disabled' if not admin_quota["can_create"] else '' }}>
+      {{ 'Quota Reached' if not admin_quota["can_create"] else 'Create Employee' }}
+    </button>
+  </form>
+
+  <form method="post" action="{{ url_for('import_employee_accounts') }}" enctype="multipart/form-data" class="employee-import-form">
+    {{ csrf_input() }}
+    <div class="employee-import-head">
+      <div class="module-icon module-icon-onboarding" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none">
+          <rect x="3" y="4" width="18" height="16" rx="2"></rect>
+          <path d="M8 11h8M8 15h5M8 8h3"></path>
+          <path d="M17 3v5M14.5 5.5H19.5"></path>
+        </svg>
+      </div>
+      <div>
+        <h3>Bulk Employee Onboarding</h3>
+        <p class="muted">Upload one CSV to create multiple employee accounts with validation and quota control.</p>
+      </div>
+    </div>
+    <div class="employee-import-grid">
+      <input type="file" name="employee_csv" accept=".csv,text/csv" required />
+      <a class="btn btn-soft" href="{{ url_for('download_employee_import_template') }}">Download Template</a>
+      <button class="btn btn-primary" type="submit" {{ 'disabled' if not admin_quota["can_create"] else '' }}>
+        {{ 'Quota Reached' if not admin_quota["can_create"] else 'Import CSV' }}
+      </button>
+    </div>
+    <p class="muted">Required columns: <code>full_name</code>, <code>username</code>, <code>password</code>. Optional: <code>employee_code</code>, <code>department</code>, <code>designation</code>, <code>phone</code>, <code>joining_date</code>.</p>
+  </form>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Username</th>
+          <th>Emp Code</th>
+          <th>Department</th>
+          <th>Designation</th>
+          <th>Phone</th>
+          <th>Join Date</th>
+          <th>Status</th>
+          <th>Today</th>
+          <th>Late</th>
+          <th>Reset Password</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for employee in employee_rows %}
+        <tr>
+          <td><input form="employee-form-{{ employee['id'] }}" type="text" name="full_name" value="{{ employee['full_name'] }}" required /></td>
+          <td><span class="muted">{{ employee['username'] }}</span></td>
+          <td><input form="employee-form-{{ employee['id'] }}" type="text" name="employee_code" value="{{ employee['employee_code'] }}" /></td>
+          <td><input form="employee-form-{{ employee['id'] }}" type="text" name="department" value="{{ employee['department'] }}" /></td>
+          <td><input form="employee-form-{{ employee['id'] }}" type="text" name="designation" value="{{ employee['designation'] }}" /></td>
+          <td><input form="employee-form-{{ employee['id'] }}" type="text" name="phone" value="{{ employee['phone'] }}" /></td>
+          <td><input form="employee-form-{{ employee['id'] }}" type="date" name="joining_date" value="{{ employee['joining_date'] }}" /></td>
+          <td>
+            <label class="checkline compact">
+              <input form="employee-form-{{ employee['id'] }}" type="checkbox" name="is_active" {{ 'checked' if employee['is_active'] else '' }} /> Active
+            </label>
+          </td>
+          <td>
+            <span class="event-badge {{ 'event-in' if employee['status'] == 'IN' else 'event-out' }}">{{ employee['status'] }}</span>
+            <p class="muted">{{ employee['today_hours'] }}</p>
+          </td>
+          <td>{{ employee['late_minutes'] }}m</td>
+          <td>
+            <input
+              form="employee-form-{{ employee['id'] }}"
+              type="password"
+              name="new_password"
+              minlength="6"
+              placeholder="Optional"
+            />
+          </td>
+          <td>
+            <button class="btn btn-primary" form="employee-form-{{ employee['id'] }}" type="submit">Save</button>
+            <form id="employee-form-{{ employee['id'] }}" method="post" action="{{ url_for('update_employee_profile', user_id=employee['id']) }}">{{ csrf_input() }}</form>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="12" class="no-data">No employee accounts found.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="panel correction-panel">
+  <div class="panel-head">
+    <h2>Correction Requests</h2>
+    <p>Approve or reject pending correction requests.</p>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Employee</th>
+          <th>Type</th>
+          <th>Event</th>
+          <th>Requested Time</th>
+          <th>Reason</th>
+          <th>Status</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in pending_corrections %}
+        <tr>
+          <td>{{ item['requester_name'] }} ({{ item['requester_username'] }})</td>
+          <td>{{ item['request_type'] }}</td>
+          <td>{{ item['proposed_event_type'] }}</td>
+          <td>{{ item['requested_datetime'] }}</td>
+          <td>{{ item['reason'] }}</td>
+          <td><span class="source-badge source-live">{{ item['status'] }}</span></td>
+          <td>
+            <form method="post" action="{{ url_for('resolve_correction', correction_id=item['id']) }}" class="correction-action-form">
+              {{ csrf_input() }}
+              <select name="decision" required>
+                <option value="APPROVE">Approve</option>
+                <option value="REJECT">Reject</option>
+              </select>
+              <input type="text" name="admin_note" placeholder="Optional note" maxlength="800" />
+              <button class="btn btn-primary" type="submit">Submit</button>
+            </form>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="7" class="no-data">No pending correction requests.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="table-wrap secondary-table">
+    <table>
+      <thead>
+        <tr>
+          <th>Employee</th>
+          <th>Type</th>
+          <th>Requested</th>
+          <th>Status</th>
+          <th>Resolved By</th>
+          <th>Admin Note</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in recent_corrections %}
+        <tr>
+          <td>{{ item['requester_name'] }}</td>
+          <td>{{ item['request_type'] }} ({{ item['proposed_event_type'] }})</td>
+          <td>{{ item['requested_datetime'] }}</td>
+          <td>{{ item['status'] }}</td>
+          <td>{{ item['resolver_name'] or '-' }}</td>
+          <td>{{ item['admin_note'] or '-' }}</td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="6" class="no-data">No correction request history.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+{% else %}
+<section class="panel profile-panel">
+  <div class="panel-head">
+    <h2>My Profile and Correction History</h2>
+    <p>Your employee profile metadata and all correction request statuses.</p>
+  </div>
+
+  <div class="profile-grid">
+    <article class="profile-card">
+      <h3>Profile</h3>
+      <p><strong>Employee Code:</strong> {{ profile['employee_code'] or '-' }}</p>
+      <p><strong>Department:</strong> {{ profile['department'] or '-' }}</p>
+      <p><strong>Designation:</strong> {{ profile['designation'] or '-' }}</p>
+      <p><strong>Phone:</strong> {{ profile['phone'] or '-' }}</p>
+      <p><strong>Joining Date:</strong> {{ profile['joining_date'] or '-' }}</p>
+    </article>
+
+    <article class="profile-card">
+      <h3>Correction Requests</h3>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Type</th>
+              <th>Event</th>
+              <th>Requested</th>
+              <th>Status</th>
+              <th>Admin Note</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in my_corrections %}
+            <tr>
+              <td>{{ item['request_type'] }}</td>
+              <td>{{ item['proposed_event_type'] }}</td>
+              <td>{{ item['requested_datetime'] }}</td>
+              <td>{{ item['status'] }}</td>
+              <td>{{ item['admin_note'] or '-' }}</td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="5" class="no-data">No correction requests submitted yet.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </article>
+  </div>
+</section>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+  window.ATTENDANCE_CONFIG = {
+    endpoint: "{{ url_for('submit_attendance') }}"
+  };
+</script>
+<script src="{{ url_for('static', filename='js/attendance.js') }}"></script>
+{% endblock %}

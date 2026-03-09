@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+{% block title %}Main Admin | {{ company_name }}{% endblock %}
+{% block content %}
+<section class="panel hero-ribbon">
+  <div class="hero-main">
+    <p class="hero-eyebrow">Main Admin Control</p>
+    <h1>Company Admin Quota Control Tower</h1>
+    <p class="hero-subtext">
+      Create company-admin accounts, assign user creation limits, and control account activation from one central panel.
+    </p>
+  </div>
+  <div class="hero-side">
+    <article class="hero-metric">
+      <p>Total Company Admins</p>
+      <h3>{{ stats["total_company_admins"] }}</h3>
+      <span>managed tenants</span>
+    </article>
+    <article class="hero-metric">
+      <p>Total Employees</p>
+      <h3>{{ stats["total_employees"] }}</h3>
+      <span>all company users</span>
+    </article>
+  </div>
+</section>
+
+<section class="stats-grid">
+  <article class="stat-card">
+    <p>Provisioned Capacity</p>
+    <h2>{{ stats["capacity_total"] }}</h2>
+  </article>
+  <article class="stat-card">
+    <p>Used Capacity</p>
+    <h2>{{ stats["capacity_used"] }}</h2>
+  </article>
+  <article class="stat-card">
+    <p>Remaining Capacity</p>
+    <h2>{{ stats["capacity_remaining"] }}</h2>
+  </article>
+  <article class="stat-card">
+    <p>Utilization %</p>
+    <h2>
+      {% if stats["capacity_total"] > 0 %}
+      {{ ((stats["capacity_used"] * 100) // stats["capacity_total"]) | int }}%
+      {% else %}
+      0%
+      {% endif %}
+    </h2>
+  </article>
+</section>
+
+<section class="super-admin-grid">
+  <article class="panel">
+    <div class="panel-head">
+      <h2>Create Company Admin</h2>
+      <p>Create a tenant admin and define how many employee accounts they can create.</p>
+    </div>
+    <form method="post" action="{{ url_for('create_company_admin') }}" class="super-form">
+      {{ csrf_input() }}
+      <label for="company_admin_name">Full Name</label>
+      <input id="company_admin_name" type="text" name="full_name" required maxlength="120" placeholder="e.g. Rohit Sharma" />
+
+      <div class="super-form-grid">
+        <div>
+          <label for="company_admin_username">Username</label>
+          <input id="company_admin_username" type="text" name="username" required maxlength="80" placeholder="e.g. acme_admin" />
+        </div>
+        <div>
+          <label for="company_admin_password">Password</label>
+          <input id="company_admin_password" type="password" name="password" required minlength="6" placeholder="Minimum 6 characters" />
+        </div>
+      </div>
+
+      <label for="company_admin_limit">User Creation Limit</label>
+      <input id="company_admin_limit" type="number" name="user_limit" min="1" max="50000" required value="50" />
+
+      <label for="company_admin_analytics_years">Analytics Access (Years)</label>
+      <input
+        id="company_admin_analytics_years"
+        type="number"
+        name="analytics_years_limit"
+        min="1"
+        max="10"
+        required
+        value="1"
+      />
+
+      <button class="btn btn-primary" type="submit">Create Company Admin</button>
+    </form>
+  </article>
+
+  <article class="panel">
+    <div class="panel-head">
+      <h2>How To Scale This Product</h2>
+      <p>Use this workflow to package and sell by industry.</p>
+    </div>
+    <div class="value-grid super-value-grid">
+      <article class="value-card">
+        <h3>Base Package</h3>
+        <p>Attendance + geofence + correction workflow + analytics as the standard deployment layer.</p>
+      </article>
+      <article class="value-card">
+        <h3>Industry Add-Ons</h3>
+        <p>Bundle shift planning, payroll sync, compliance vault, and visitor desk by customer segment.</p>
+      </article>
+      <article class="value-card">
+        <h3>Tenant Governance</h3>
+        <p>Quota limits by company admin prevent abuse and let you price by user capacity tiers.</p>
+      </article>
+      <article class="value-card">
+        <h3>Enterprise Upsell</h3>
+        <p>Add API connectors, SSO, and audit exports for larger clients and annual contracts.</p>
+      </article>
+    </div>
+  </article>
+</section>
+
+<section class="panel">
+  <div class="panel-head">
+    <h2>Company Admin Accounts</h2>
+    <p>Adjust user limits and account status in real time.</p>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Admin</th>
+          <th>Status</th>
+          <th>Used</th>
+          <th>Limit</th>
+          <th>Analytics (Years)</th>
+          <th>Remaining</th>
+          <th>Created</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in company_admin_rows %}
+        <tr>
+          <td>
+            <strong>{{ item["full_name"] }}</strong>
+            <p class="muted">{{ item["username"] }}</p>
+          </td>
+          <td>
+            <span class="source-badge {{ 'source-live' if item['is_active'] else 'source-correction' }}">
+              {{ "ACTIVE" if item["is_active"] else "INACTIVE" }}
+            </span>
+          </td>
+          <td>{{ item["used"] }}</td>
+          <td>{{ item["user_limit"] }}</td>
+          <td>{{ item["analytics_years_limit"] }}</td>
+          <td>{{ item["remaining"] }}</td>
+          <td>{{ item["created_at"] }}</td>
+          <td>
+            <div class="super-action-stack">
+              <form method="post" action="{{ url_for('update_company_admin_limit', admin_id=item['id']) }}" class="super-inline-form">
+                {{ csrf_input() }}
+                <input type="number" name="user_limit" min="1" max="50000" value="{{ item['user_limit'] }}" required />
+                <button class="btn btn-primary" type="submit">Update Limit</button>
+              </form>
+              <form method="post" action="{{ url_for('update_company_admin_analytics_limit', admin_id=item['id']) }}" class="super-inline-form">
+                {{ csrf_input() }}
+                <input type="number" name="analytics_years_limit" min="1" max="10" value="{{ item['analytics_years_limit'] }}" required />
+                <button class="btn btn-soft" type="submit">Update Analytics</button>
+              </form>
+              <form method="post" action="{{ url_for('reset_company_admin_password', admin_id=item['id']) }}" class="super-inline-form">
+                {{ csrf_input() }}
+                <input type="password" name="new_password" minlength="6" required placeholder="New Password" />
+                <button class="btn btn-soft" type="submit">Reset Password</button>
+              </form>
+              <form method="post" action="{{ url_for('toggle_company_admin_status', admin_id=item['id']) }}">
+                {{ csrf_input() }}
+                <button class="btn {{ 'btn-danger' if item['is_active'] else 'btn-soft' }}" type="submit">
+                  {{ "Deactivate" if item["is_active"] else "Activate" }}
+                </button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="8" class="no-data">No company admin accounts found.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

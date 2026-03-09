@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% block title %}Analytics | {{ company_name }}{% endblock %}
+{% block content %}
+<section class="panel hero-ribbon hero-ribbon-compact">
+  <div class="hero-main">
+    <p class="hero-eyebrow">Analytics Intelligence</p>
+    <h1>Attendance Performance Studio</h1>
+    <p class="hero-subtext">
+      Track workforce trends, punctuality, performance distribution, and department utilization in one focused analytics workspace.
+    </p>
+    <div class="hero-actions">
+      <a class="btn btn-soft" href="{{ url_for('dashboard') }}">Back to Dashboard</a>
+    </div>
+  </div>
+</section>
+
+<section class="analytics-kpi-grid">
+  <article class="kpi-card">
+    <p>Avg Hours (Range)</p>
+    <h3 id="kpi-avg-hours">--</h3>
+  </article>
+  <article class="kpi-card">
+    <p>Late Days (Range)</p>
+    <h3 id="kpi-late">--</h3>
+  </article>
+  <article class="kpi-card">
+    <p>Overtime (Range)</p>
+    <h3 id="kpi-overtime">--</h3>
+  </article>
+  <article class="kpi-card">
+    <p>Pending Corrections</p>
+    <h3 id="kpi-pending">--</h3>
+  </article>
+</section>
+
+<section class="panel analytics-panel">
+  <div class="panel-head table-head">
+    <div>
+      <h2>Advanced Employee Analytics</h2>
+      <p>Performance, punctuality, department utilization, and attendance flow trends across your allowed year range.</p>
+      <div class="analytics-toolbar">
+        <label for="analytics-years-select">Range</label>
+        <select id="analytics-years-select">
+          {% for year in range(1, analytics_years_limit + 1) %}
+          <option value="{{ year }}">{{ year }} Year{% if year > 1 %}s{% endif %}</option>
+          {% endfor %}
+        </select>
+        <span class="muted">Allowed by main admin: {{ analytics_years_limit }} year{% if analytics_years_limit > 1 %}s{% endif %}</span>
+      </div>
+    </div>
+    <p id="analytics-status" class="analytics-status">Loading analytics...</p>
+  </div>
+
+  <form method="post" action="{{ url_for('import_analytics_csv') }}" enctype="multipart/form-data" class="employee-import-form analytics-import-form">
+    {{ csrf_input() }}
+    <div class="employee-import-head">
+      <div class="module-icon module-icon-onboarding" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none">
+          <rect x="3" y="4" width="18" height="16" rx="2"></rect>
+          <path d="M8 11h8M8 15h5M8 8h3"></path>
+          <path d="M17 3v5M14.5 5.5H19.5"></path>
+        </svg>
+      </div>
+      <div>
+        <h3>Import Historical Attendance CSV</h3>
+        <p class="muted">Upload historical IN/OUT data to build long-range analytics trends.</p>
+      </div>
+    </div>
+    <div class="employee-import-grid">
+      <input type="file" name="analytics_csv" accept=".csv,text/csv" required />
+      <a class="btn btn-soft" href="{{ url_for('download_analytics_import_template') }}">Download Template</a>
+      <button class="btn btn-primary" type="submit">Import CSV</button>
+    </div>
+    <p class="muted">Required columns: <code>username</code>, <code>event_type</code>, <code>created_at</code>. Optional: <code>person_name</code>, <code>latitude</code>, <code>longitude</code>, <code>location_text</code>.</p>
+  </form>
+
+  <div class="analytics-grid">
+    <article class="chart-card">
+      <h3>Hours by Employee</h3>
+      <canvas id="hours-by-employee-chart"></canvas>
+    </article>
+    <article class="chart-card">
+      <h3>IN vs OUT Trend</h3>
+      <canvas id="daily-in-out-chart"></canvas>
+    </article>
+    <article class="chart-card">
+      <h3>Performance Score</h3>
+      <canvas id="score-by-employee-chart"></canvas>
+    </article>
+    <article class="chart-card">
+      <h3>Department Hours</h3>
+      <canvas id="department-hours-chart"></canvas>
+    </article>
+    <article class="chart-card chart-card-wide">
+      <div class="chart-head">
+        <h3>Employee Trend Hours</h3>
+        <select id="employee-analytics-select"></select>
+      </div>
+      <canvas id="employee-daily-hours-chart"></canvas>
+    </article>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  window.ATTENDANCE_CONFIG = {
+    analyticsEndpoint: "{{ url_for('admin_analytics') }}",
+    isAdmin: true,
+    analyticsYearsAllowed: {{ analytics_years_limit }},
+    analyticsYearsDefault: 1
+  };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="{{ url_for('static', filename='js/admin-analytics.js') }}"></script>
+{% endblock %}
