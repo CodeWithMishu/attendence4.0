@@ -3472,6 +3472,16 @@ def export_attendance():
     return response
 
 
+# ── Startup diagnostic: log the resolved DATABASE_URL (password masked) ──
+_startup_url = _database_url()
+_masked = _startup_url
+if "@" in _startup_url:
+    _pre, _post = _startup_url.split("@", 1)
+    _scheme_user = _pre.rsplit(":", 1)[0]  # scheme://user
+    _masked = f"{_scheme_user}:***@{_post}"
+app.logger.info("DATABASE_URL resolved to: %s", _masked)
+del _startup_url, _masked
+
 try:
     init_db()
 except Exception as startup_exc:
@@ -3479,6 +3489,29 @@ except Exception as startup_exc:
     app.logger.exception(
         "Startup initialization failed. Service is running in degraded mode until fixed."
     )
+
+
+@app.route("/health")
+def health_check():
+    """Diagnostic endpoint — no auth required."""
+    info = {"status": "ok", "startup_error": STARTUP_ERROR_MESSAGE or None}
+    url = _database_url()
+    if "@" in url:
+        pre, post = url.split("@", 1)
+        scheme_user = pre.rsplit(":", 1)[0]
+        info["db_url"] = f"{scheme_user}:***@{post}"
+    else:
+        info["db_url"] = url[:60]
+    try:
+        db.session.execute(text("SELECT 1"))
+        info["db_reachable"] = True
+    except Exception as exc:
+        info["db_reachable"] = False
+        info["db_error"] = str(exc)[:300]
+    if STARTUP_ERROR_MESSAGE:
+        info["status"] = "degraded"
+    return info, 200 if info["status"] == "ok" else 503
+
 
 if __name__ == "__main__":
     app.run(
