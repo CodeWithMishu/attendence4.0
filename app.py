@@ -420,7 +420,26 @@ app.jinja_env.globals["csrf_input"] = csrf_input
 
 def init_db() -> None:
     with app.app_context():
-        db.create_all()
+        try:
+            db.create_all()
+        except SQLAlchemyError as exc:
+            if _is_duplicate_schema_error(exc):
+                app.logger.warning(
+                    "create_all() hit a duplicate schema object (likely stale types from a previous "
+                    "partial migration). Retrying table creation individually. Original error: %s",
+                    exc,
+                )
+                db.session.rollback()
+                for table in db.metadata.sorted_tables:
+                    try:
+                        table.create(db.engine, checkfirst=True)
+                    except SQLAlchemyError as table_exc:
+                        if _is_duplicate_schema_error(table_exc):
+                            app.logger.info("Table %s already exists, skipping.", table.name)
+                        else:
+                            raise
+            else:
+                raise
         _run_legacy_migrations()
         _ensure_defaults()
 
