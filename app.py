@@ -1213,6 +1213,13 @@ def login_required(fn):
             return redirect(url_for("login"))
         user = current_user()
         if not user:
+            stale_uid = session.get("user_id")
+            app.logger.warning(
+                "login_required: user_id=%s not found in database. "
+                "This usually means the database was reset (ephemeral SQLite on serverless). "
+                "Set DATABASE_URL to a persistent Postgres database.",
+                stale_uid,
+            )
             session.clear()
             flash("Session expired. Please login again.", "warning")
             return redirect(url_for("login"))
